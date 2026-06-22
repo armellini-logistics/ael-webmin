@@ -34,7 +34,10 @@ my %miniserv;
 &get_miniserv_config(\%miniserv);
 
 my ($user, $pass);
-if ($s->{'autouser'}) {
+if ($s->{'token'}) {
+	# Using token auth
+	}
+elsif ($s->{'autouser'}) {
 	# Login is variable .. check if we have it yet
 	if ($ENV{'HTTP_COOKIE'} =~ /$id=(\S+)/) {
 		# Yes - set the login and password to use
@@ -85,9 +88,16 @@ my $con = &make_http_connection($s->{'ip'} || $s->{'host'}, $s->{'port'},
 # Send request headers
 &write_http_connection($con, "Host: $s->{'host'}\r\n");
 &write_http_connection($con, "User-agent: Webmin\r\n");
-my $auth = &encode_base64("$user:$pass");
-$auth =~ s/\n//g;
-&write_http_connection($con, "Authorization: basic $auth\r\n");
+my $auth;
+if ($s->{'token'}) {
+	$auth = "Bearer $s->{'token'}";
+	}
+else {
+	my $b64 = &encode_base64("$user:$pass");
+	$b64 =~ s/\n//g;
+	$auth = "basic $b64";
+	}
+&write_http_connection($con, "Authorization: $auth\r\n");
 my ($http_host, $http_port);
 if ($ENV{'HTTP_HOST'} =~ /^(\S+):(\d+)$/) {
 	# Browser supplies port

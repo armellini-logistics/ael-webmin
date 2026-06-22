@@ -42,7 +42,12 @@ else {
 		$in{'wuser'} =~ /\S/ || &error($text{'save_euser'});
 		$in{'wpass'} =~ /\S/ || &error($text{'save_epass'});
 		}
-	if ($in{'fast'} == 2 && $in{'mode'} == 1) {
+	elsif ($in{'mode'} == 4) {
+		&to_ipaddress($in{'host'}) || &to_ip6address($in{'host'}) ||
+			&error($text{'save_ehost2'});
+		$in{'wtoken'} =~ /\S/ || &error($text{'save_etoken'});
+		}
+	if ($in{'fast'} == 2 && ($in{'mode'} == 1 || $in{'mode'} == 4)) {
 		# Does the server have fastrpc.cgi ?
 		my $con = &make_http_connection($in{'host'}, $in{'port'},
 					   $in{'ssl'}, "GET", "/fastrpc.cgi");
@@ -52,13 +57,20 @@ else {
 				        "Host: $serv->{'host'}\r\n");
 			&write_http_connection($con,
 					"User-agent: Webmin\r\n");
-			my $auth = &encode_base64("$in{'wuser'}:$in{'wpass'}");
-			$auth =~ s/\n//g;
+			my $auth;
+			if ($in{'mode'} == 4) {
+				$auth = "Bearer $in{'wtoken'}";
+				}
+			else {
+				my $b64 = &encode_base64("$in{'wuser'}:$in{'wpass'}");
+				$b64 =~ s/\n//g;
+				$auth = "basic $b64";
+				}
 			&write_http_connection($con,
-					"Authorization: basic $auth\r\n");
+					"Authorization: $auth\r\n");
 			&write_http_connection($con, "\r\n");
 			my $line = &read_http_connection($con);
-			if ($line =~ /^HTTP\/1\..\s+401\s+/) {
+			if ($line =~ /^HTTP\/1\..\s+40[13]\s+/) {
 				&error($text{'save_elogin'});
 				}
 			elsif ($line =~ /^HTTP\/1\..\s+200\s+/) {
@@ -103,6 +115,7 @@ else {
 	delete($serv->{'pass'});
 	delete($serv->{'autouser'});
 	delete($serv->{'sameuser'});
+	delete($serv->{'token'});
 	if ($in{'mode'} == 1) {
 		$serv->{'user'} = $in{'wuser'};
 		$serv->{'pass'} = $in{'wpass'};
@@ -113,6 +126,9 @@ else {
 	elsif ($in{'mode'} == 3) {
 		$serv->{'user'} = 'same';
 		$serv->{'sameuser'} = 1;
+		}
+	elsif ($in{'mode'} == 4) {
+		$serv->{'token'} = $in{'wtoken'};
 		}
 	&save_server($serv);
 	delete($serv->{'pass'});

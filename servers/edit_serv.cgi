@@ -90,6 +90,7 @@ else {
 	}
 
 my $mode = $in{'new'} ? $config{'deflink'} :
+	$s->{'token'} ? 4 :
 	$s->{'autouser'} ? 2 :
 	$s->{'sameuser'} ? 3 : $s->{'user'} ? 1 : 0;
 if ($access{'forcelink'}) {
@@ -100,11 +101,16 @@ if ($access{'forcelink'}) {
 		print &ui_table_row($text{'edit_lpass'},
 				    &ui_password("wpass", $s->{'pass'}, 10));
 		}
+	elsif ($mode == 4) {
+		print &ui_table_row($text{'edit_ltoken'},
+				    &ui_textbox("wtoken", $s->{'token'}, 40));
+		}
 	}
 else {
 	# Login mode
 	my $qulbl = &quote_escape($text{'edit_user'}, '"');
 	my $qplbl = &quote_escape($text{'edit_pass'}, '"');
+	my $qtlbl = &quote_escape($text{'edit_token'}, '"');
 	my $linksel = &ui_radio("mode", $mode,
 		[ [ 0, "$text{'edit_mode0'}<br>" ],
 		  [ 1, &text('edit_mode12',
@@ -113,6 +119,11 @@ else {
 			    " aria-label=\"$qulbl\" placeholder=\"$qulbl\""),
 			&ui_password("wpass", $s->{'pass'}, 8, undef, undef,
 			    " aria-label=\"$qplbl\" placeholder=\"$qplbl\"")).
+			"<br>" ],
+		  [ 4, $text{'edit_mode4'}." ".
+			&ui_textbox("wtoken", $mode == 4 ? $s->{'token'} : "", 35,
+			    undef, undef,
+			    " aria-label=\"$qtlbl\" placeholder=\"$qtlbl\"").
 			"<br>" ],
 		  [ 2, "$text{'edit_mode2'}<br>" ],
 		  ($access{'pass'} && !$main::session_id || $mode == 3 ?

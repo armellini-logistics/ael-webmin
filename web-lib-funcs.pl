@@ -8880,7 +8880,7 @@ my $sn = &remote_session_name($serv_host);  # Will be undef for local connection
 if (ref($serv_host)) {
 	# Server structure was given
 	$serv = $serv_host;
-	$serv->{'user'} || $serv->{'id'} == 0 ||
+	($serv->{'user'} || $serv->{'token'} || $serv->{'id'} == 0) ||
 		return &$main::remote_error_handler(
 			"No Webmin login set for server");
 	}
@@ -8896,7 +8896,7 @@ elsif ($serv_host) {
 	$serv = $main::remote_servers_cache{$serv_host};
 	$serv || return &$main::remote_error_handler(
 				"No Webmin Servers entry for $serv_host");
-	$serv->{'user'} || return &$main::remote_error_handler(
+	($serv->{'user'} || $serv->{'token'}) || return &$main::remote_error_handler(
 				"No login set for server $serv_host");
 	}
 my $ip = $serv->{'ip'} || $serv->{'host'};
@@ -8935,9 +8935,16 @@ if ($serv->{'fast'} || !$sn) {
 			if (!ref($con));
 		&write_http_connection($con, "Host: $serv->{'host'}\r\n");
 		&write_http_connection($con, "User-agent: Webmin\r\n");
-		my $auth = &encode_base64("$user:$pass");
-		$auth =~ tr/\n//d;
-		&write_http_connection($con, "Authorization: basic $auth\r\n");
+		my $auth;
+		if ($serv->{'token'}) {
+			$auth = "Bearer $serv->{'token'}";
+			}
+		else {
+			my $b64 = &encode_base64("$user:$pass");
+			$b64 =~ tr/\n//d;
+			$auth = "basic $b64";
+			}
+		&write_http_connection($con, "Authorization: $auth\r\n");
 		&write_http_connection($con, "\r\n");
 
 		# read back the response
@@ -9103,9 +9110,16 @@ else {
 
 	&write_http_connection($con, "Host: $serv->{'host'}\r\n");
 	&write_http_connection($con, "User-agent: Webmin\r\n");
-	my $auth = &encode_base64("$user:$pass");
-	$auth =~ tr/\n//d;
-	&write_http_connection($con, "Authorization: basic $auth\r\n");
+	my $auth;
+	if ($serv->{'token'}) {
+		$auth = "Bearer $serv->{'token'}";
+		}
+	else {
+		my $b64 = &encode_base64("$user:$pass");
+		$b64 =~ tr/\n//d;
+		$auth = "basic $b64";
+		}
+	&write_http_connection($con, "Authorization: $auth\r\n");
 	&write_http_connection($con, "Content-length: ",length($tostr),"\r\n");
 	&write_http_connection($con, "\r\n");
 	&write_http_connection($con, $tostr);

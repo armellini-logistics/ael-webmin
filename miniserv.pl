@@ -1829,6 +1829,37 @@ if (!$validated && !$deny_authentication) {
 		}
 	}
 
+# Check for Bearer token authentication
+if (!$validated && !$deny_authentication &&
+    $header{authorization} =~ /^bearer\s+(\S+)$/i) {
+	my $token = $1;
+	my $tokens_file;
+	if ($config_file =~ /^(.*)\/[^\/]+$/) {
+		$tokens_file = "$1/rpc_tokens.conf";
+		}
+	else {
+		$tokens_file = "/etc/webmin/rpc_tokens.conf";
+		}
+	if (-r $tokens_file) {
+		my %tokens = &read_config_file($tokens_file);
+		my $tval = $tokens{$token};
+		if ($tval) {
+			my ($tuser, $tdesc) = split(/:/, $tval, 2);
+			if ($tuser) {
+				$authuser = $tuser;
+				$validated = 1;
+				print DEBUG "handle_request: validated via Bearer token for user $authuser\n";
+				}
+			}
+		}
+	if (!$validated) {
+		print DEBUG "handle_request: Bearer token authentication failed\n";
+		if ($use_syslog) {
+			syslog("crit", "%s", "Invalid Bearer token login attempt");
+			}
+		}
+	}
+
 # Check for normal HTTP authentication
 if (!$validated && !$deny_authentication && !$config{'session'} &&
     $header{authorization} =~ /^basic\s+(\S+)$/i) {

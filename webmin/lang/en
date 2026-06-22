@@ -1309,4 +1309,20 @@ os_eol_reaching2=EOL imminent
 qr_err=Failed to generate QR code
 qr_estr=Missing QR code string!
 
+tokens_title=RPC Authentication Tokens
+tokens_desc=This page lists the authentication tokens configured for this Webmin server. Webmin servers that are designated as Parents can use these tokens to connect to this server as a Child without providing a username and password.
+tokens_header=Allowed connection tokens
+tokens_token=Token value
+tokens_user=Local Webmin user
+tokens_comment=Description / Notes
+tokens_none=No RPC authentication tokens have been created yet.
+tokens_delete=Revoke Selected Tokens
+tokens_add=Create a new RPC token
+tokens_gen=Generate random token
+tokens_user_sel=Map to Webmin user
+tokens_save_err=Failed to save RPC token
+tokens_err_token=Invalid or empty token value
+tokens_err_user=No Webmin user selected
+tokens_created=Token created successfully: $1
+
 __norefs=1
