@@ -1,0 +1,4 @@
+desc=AI Help Chatbot
+category=system
+version=1.0
+depends=webmin 2.655

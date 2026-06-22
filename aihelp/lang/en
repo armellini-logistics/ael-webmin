@@ -1,0 +1,12 @@
+index_title=AI Help Chatbot
+index_apikey=Gemini API Key
+index_apikey_desc=To use the AI chatbot, please enter a valid Google Gemini API Key. You can get a free key from Google AI Studio.
+index_save=Save Settings
+index_clear=Clear Chat
+index_settings=Settings
+index_prompt_placeholder=Ask a question about Webmin or how to perform a task...
+index_send=Send
+index_bot_welcome=Hello! I am your Webmin AI Assistant. How can I help you manage your server today?
+index_err_key=Please enter a valid Gemini API Key.
+index_saved=Gemini API Key saved successfully.
+index_return=Return to main menu

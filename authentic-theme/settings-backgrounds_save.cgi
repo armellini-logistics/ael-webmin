@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/local/bin/perl
 
 #
 # Authentic Theme (https://github.com/authentic-theme/authentic-theme)
