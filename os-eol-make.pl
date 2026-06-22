@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 # Build EOL data JSON file
 
 if ($0 =~ /^(.*)\//) {

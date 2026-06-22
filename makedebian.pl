@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 # Build a Debian package of Webmin
 
 use POSIX;

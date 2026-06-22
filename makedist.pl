@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+#!/usr/bin/perl
 # Builds a tar.gz package of a specified Webmin version
 
 # Parse command line options
