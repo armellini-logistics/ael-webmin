@@ -1,0 +1,112 @@
+lost_message=Jeśli Twoje konto ma ustawiony adres e-mail umożliwiający odzyskanie hasła, możesz użyć tego formularza, aby wysłać sobie link do zresetowania hasła
+reset_message=Zamierzasz zresetować hasło użytkownika <tt>$1</tt> na
+login_recover=Poproś o zresetowanie hasła
+login_back=Wracać
+
+settings_right_sync2=Tak, zawsze
+settings_right_sync1=Tak, tylko na przełączniku nawigacyjnym
+settings_right_sync0=Nie, nigdy
+
+settings_roundish_menu=Zaokrąglone rogi menu
+
+settings_side_slider_fixed_description=Ta opcja przytrzymuje suwak boczny po prawej stronie ekranu, dzięki czemu jest zawsze widoczny. Do prawidłowego działania wymagana jest minimalna szerokość ekranu 1366 pikseli.
+
+settings_roundish_slider=Zaokrąglone rogi suwaka
+settings_roundish_radius_description=Kontroluje promień zaokrąglenia wszystkich narożników w motywie, w tym na stronie z treścią, w menu nawigacyjnym i w suwaku bocznym. Działa tylko wtedy, gdy zaokrąglanie narożników jest włączone w odpowiednich sekcjach konfiguracji.
+
+# 17.84
+theme_xhred_datatable_filter=Filtr
+
+theme_xhred_filemanager_new_tab=Dodaj nową kartę (Alt + Spacja)
+
+# 18.40
+settings_show_night_mode_link=Pokaż przycisk trybu jasnego/ciemnego
+
+theme_tooltip_night_mode=Przełączanie trybu jasnego/ciemnego
+
+# 18.49
+theme_xhred_global_auto=Automatyczny
+
+# 19.30
+theme_xhred_favorites_add=Dodaj do ulubionych
+
+# 19.71
+settings_sysinfo_hidden_panels_user=Panele deski rozdzielczej
+settings_right_hotkey_options=Skróty klawiaturowe
+settings_right_hotkey_custom_options=Skróty niestandardowych łączy
+
+# 19.84
+settings_right_table_force_single_column=Wymuś tryb pojedynczej kolumny
+
+# 19.95
+theme_xhred_settings_sysinfo_hidden_panels_user_desc_pc=Wybierz panele do wyświetlenia. Podczas zaznaczania przytrzymaj klawisz <tt>Ctrl</tt>
+theme_xhred_settings_sysinfo_hidden_panels_user_desc_mac=Wybierz panele do wyświetlenia. Przytrzymaj klawisz <tt>Command</tt> podczas zaznaczania
+
+# 20.30
+theme_xhred_hotkey_list_tabs=Lista kart
+theme_xhred_hotkey_print_title=Skróty klawiaturowe Webmin z motywem Authentic
+
+# 21.10
+theme_xhred_hotkey_emsg=Klawisza ukośnika odwrotnego nie można używać jako skrótu
+
+# 21.20.2
+theme_xhred_filemanager_upload_status_unknown=Przesyłanie nie powiodło się, a serwer nie odpowiedział. Prawdopodobnie oznacza to, że użytkownikowi serwera wirtualnego zabrakło miejsca na dysku lub w systemie zabrakło miejsca.
+
+# 21.20.7
+theme_xhred_dashboard_chart_disk_read=Czytać
+theme_xhred_dashboard_chart_disk_write=Pisać
+theme_xhred_dashboard_chart_net_read=W
+theme_xhred_dashboard_chart_net_write=Na zewnątrz
+theme_xhred_tooltip_dashboard_live_stats_offline=Statystyki na żywo nie są dostępne, gdy dostęp do systemu odbywa się w trybie proxy; wyświetlane są tylko wcześniej zebrane statystyki, i tylko wtedy, gdy są dostępne, a w celu ich zaktualizowania konieczne będzie ponowne załadowanie strony
+settings_sysinfo_real_time_status_history1=Tak, i przechowuj statystyki dla
+settings_sysinfo_real_time_status_history2=Tak, bez zapisywania statystyk
+settings_sysinfo_real_time_status_history_duration1=15 minut
+settings_sysinfo_real_time_status_history_duration2=30 minut
+settings_sysinfo_real_time_status_history_duration3=45 minut
+settings_sysinfo_real_time_status_history_duration4=1 godzina
+settings_sysinfo_real_time_status_history_duration5=6 godzin
+settings_sysinfo_real_time_status_history_duration6=12 godzin
+settings_sysinfo_real_time_status_history_duration7=18 godzin
+settings_sysinfo_real_time_status_history_duration8=24 godziny
+theme_xhred_license_purchase=Kup licencję
+settings_right_table_links_sorted=Sortuj linki do tabel w kolejności alfabetycznej
+
+# 24.00
+session_error=Błąd
+session_success=Sukces
+session_cannot=Nie udało się zresetować hasła: Brak nazwy użytkownika.
+session_neterror=Nie można uzyskać odpowiedzi z sieci!
+session_unkerror=Wystąpił nieoczekiwany błąd. Spróbuj ponownie później.
+session_conerror=Nie udało się połączyć z serwerem. Spróbuj ponownie później.
+session_resetpass1=Nowe hasło
+session_resetpass2=Potwierdź nowe hasło
+session_resetepassreq=Hasło jest wymagane.
+session_pwdconf=Wymagane jest potwierdzenie hasła.
+session_pwdmatch=Hasła nie są takie same.
+session_noid=Nie znaleziono identyfikatora odzyskiwania!
+session_pwdsucc=Hasło zostało pomyślnie zmienione! Teraz możesz się zalogować przy użyciu nowego hasła.
+
+# 24.10
+settings_palette_auto=Automatyczna paleta kolorów
+settings_palette_auto_description=Automatyczny wybór palety kolorów na podstawie preferencji systemu operacyjnego lub przeglądarki
+
+#26.10
+settings_right_content_options=Strona z treścią
+settings_roundish_content=Zaokrąglone rogi strony z treścią
+settings_content_margin_multiplier=Rozmiar marginesu strony z treścią
+settings_content_margin_multiplier_side=Strona
+settings_content_margin_multiplier_top=Szczyt
+settings_sysinfo_easypie_size=Rozmiar wykresów kołowych
+settings_sysinfo_easypie_size_smaller=Bardzo mały
+settings_sysinfo_easypie_size_small=Mały
+settings_sysinfo_easypie_size_medium=Średni
+settings_sysinfo_easypie_size_auto=Automatyczny
+settings_sysinfo_easypie_size_large=Duży
+settings_sysinfo_easypie_size_extra_large=Bardzo duży
+settings_sysinfo_easypie_width=Szerokość linii wykresów kołowych
+
+#26.20
+theme_xhred_global_filter_and_search=Wpisz, aby filtrować tę stronę lub naciśnij Enter, aby przeszukać wszystkie strony
+
+#26.30
+settings_roundish_radius=Zaokrąglony promień narożnika

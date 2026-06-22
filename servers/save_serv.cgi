@@ -108,7 +108,7 @@ else {
 	$serv->{'type'} = $in{'type'};
 	$serv->{'ssl'} = $in{'ssl'};
 	$serv->{'checkssl'} = $in{'checkssl'};
-	$serv->{'desc'} = $in{'desc_def'} ? undef : $in{'desc'};
+	$serv->{'desc'} = $in{'desc'} =~ /\S/ ? $in{'desc'} : undef;
 	$serv->{'group'} = join("\t", @groups);
 	$serv->{'fast'} = $in{'fast'} // 1;
 	delete($serv->{'user'});

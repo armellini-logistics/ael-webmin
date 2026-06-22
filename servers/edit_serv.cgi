@@ -34,6 +34,10 @@ print &ui_table_start($text{'edit_details'}, undef, 2);
 print &ui_table_row($text{'edit_host'},
 		    &ui_textbox("host", $s->{'host'}, 60));
 
+print &ui_table_row($text{'edit_servername'},
+		    &ui_textbox("desc", $s->{'desc'}, 60));
+
+
 if ($in{'new'} || $s->{'port'}) {
 	print &ui_table_row($text{'edit_port'},
 			    &ui_textbox("port", $s->{'port'}, 5));
@@ -63,11 +67,6 @@ print &ui_table_row($text{'edit_ssl'},
 		    &ui_yesno_radio("ssl", int($s->{'ssl'}))."<br>\n".
 		    &ui_checkbox("checkssl", 1, $text{'edit_checkssl'},
 				 $s->{'checkssl'}));
-
-print &ui_table_row($text{'edit_desc'},
-    $config{'show_ip'} ?
-	&ui_textbox("desc", $s->{'desc'}, 40, 0, 40) :
-	&ui_opt_textbox("desc", $s->{'desc'}, 40, $text{'edit_desc_def'}));
 
 if ($access{'forcegroup'}) {
 	# Cannot change group

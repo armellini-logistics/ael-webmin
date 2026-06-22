@@ -27,6 +27,7 @@ edit_title=Edit Server
 create_title=Register Server
 edit_details=Server details
 edit_host=Hostname or IP address
+edit_servername=Server Name
 edit_realhost=Real hostname
 edit_port=Port
 edit_portnone=None set

@@ -1,0 +1,237 @@
+#!/usr/bin/perl
+
+#
+# Authentic Theme (https://github.com/authentic-theme/authentic-theme)
+# Copyright Ilia Rostovtsev <ilia@virtualmin.com>
+# Licensed under MIT (https://github.com/authentic-theme/authentic-theme/blob/master/LICENSE)
+#
+use strict;
+
+use lib ("$ENV{'PERLLIB'}/vendor_perl");
+use IO::Socket::INET;
+use Net::WebSocket::Server;
+use utf8;
+
+our ($current_theme, $json);
+require($ENV{'THEME_ROOT'} . "/stats-lib.pl");
+
+# Get port number
+my ($port) = @ARGV;
+
+# Check if user is admin
+if (!webmin_user_is_admin()) {
+	remove_miniserv_websocket($port, $current_theme);
+	error_stderr("WebSocket server cannot be accessed because the user is not a master administrator");
+	exit(2);
+}
+
+# Log successful connection
+error_stderr("WebSocket server is listening on port $port");
+
+# Current stats within a period
+my $stats_period;
+
+# Create socket
+my $server_socket = IO::Socket::INET->new(
+	Listen    => 5,
+	LocalPort => $port,
+	ReuseAddr => 1,
+	Proto     => 'tcp',
+	LocalAddr => '127.0.0.1',
+) or die "Failed to listen on port $port : $!";
+
+{
+	# Startup timeout waiting for first connection
+	local $SIG{ALRM} = sub {
+		remove_miniserv_websocket($port, $current_theme);
+		error_stderr("WebSocket server timeout waiting for a connection");
+		exit(1);
+	};
+	alarm(60);
+
+	# Start WebSocket server
+	Net::WebSocket::Server->new(
+		listen     => $server_socket,
+		tick_period => 1,
+		# Run periodic collection, broadcast, and housekeeping.
+		on_tick => sub {
+			my ($serv) = @_;
+			# If asked to stop running, then shut down the server
+			if ($serv->{'disable'}) {
+				$serv->shutdown();
+				return;
+			}
+			# Has any connection been unpaused?
+			my $unpaused = grep {
+					$serv->{'conns'}->{$_}->{'conn'}->{'pausing'} &&
+					!$serv->{'conns'}->{$_}->{'conn'}->{'paused'} }
+						keys %{$serv->{'conns'}};
+			my $stats_history;
+			# Return full stats for the given user who was unpaused
+			# to make sure graphs are updated with most recent data
+			$stats_history = get_stats_history(1) if ($unpaused);
+			# Collect current stats and send them to all connected
+			# clients unless paused for some client
+			my $stats_now = get_stats_now();
+			my $stats_now_graphs = $stats_now->{'graphs'};
+			my $stats_now_json_shared = $json->encode($stats_now);
+			utf8::decode($stats_now_json_shared);
+			my $stats_now_json_unpaused;
+			my $now = time();
+			foreach my $conn_id (keys %{$serv->{'conns'}}) {
+				my $conn = $serv->{'conns'}->{$conn_id}->{'conn'};
+				# Close unverified connections that miss handshake deadline
+				if (!$conn->{'verified'} &&
+					$conn->{'connect_deadline'} &&
+					$conn->{'connect_deadline'} <= $now) {
+					error_stderr("WebSocket connection $conn->{'port'} is ".
+								 "closed due to inactivity");
+					$conn->disconnect();
+					next;
+				}
+				if ($conn->{'verified'} && !$conn->{'paused'}) {
+					# Unpaused connection needs full stats
+					if ($conn->{'pausing'}) {
+						$conn->{'pausing'} = 0;
+						if (!defined($stats_now_json_unpaused)) {
+							my %stats_now_local = %{$stats_now};
+							my $stats_updated;
+							# Merge stats from both disk data
+							# and currently cached data
+							if ($stats_history && $stats_period) {
+								$stats_now_local{'graphs'} =
+									merge_stats(
+										deep_clone($stats_history->{'graphs'}),
+										deep_clone($stats_period));
+								$stats_updated++;
+							# If no cached data then use history
+							} elsif ($stats_history) {
+								$stats_now_local{'graphs'} =
+									deep_clone($stats_history->{'graphs'});
+								$stats_updated++;
+							# If no history then use cached data
+							} elsif ($stats_period) {
+								$stats_updated++;
+								$stats_now_local{'graphs'} =
+									deep_clone($stats_period);
+							}
+							# If stats were updated then merge
+							# them with latest (now) data
+							if ($stats_updated) {
+								$stats_now_local{'graphs'} =
+									merge_stats(
+										$stats_now_local{'graphs'},
+										deep_clone($stats_now_graphs));
+								$stats_now_json_unpaused =
+									$json->encode(\%stats_now_local);
+								utf8::decode($stats_now_json_unpaused);
+							} else {
+								$stats_now_json_unpaused = $stats_now_json_shared;
+							}
+						}
+						$conn->send_utf8($stats_now_json_unpaused);
+					} else {
+						$conn->send_utf8($stats_now_json_shared);
+					}
+				}
+			}
+			# Cache stats to server
+			if (!defined($stats_period)) {
+				$stats_period = $stats_now_graphs;
+			} else {
+				$stats_period = merge_stats($stats_period, $stats_now_graphs);
+			}
+			# Save stats to history and reset cache
+			if ($serv->{'ticked'}++ % 10 == 0) {
+				save_stats_history($stats_period)
+					if (get_stats_option('status', 1) != 2);
+				undef($stats_period);
+			}
+			# If interval is set then sleep minus one
+			# second because tick_period is one second
+			if ($serv->{'interval'} > 1) {
+				sleep($serv->{'interval'}-1);
+			}
+			# Save stats now data to the disk
+			if ($serv->{'ticked'} % 2 == 0) {
+				save_stats_now($stats_now) if ($stats_now);
+			}
+			# Release memory
+			undef($stats_now);
+			undef($stats_now_graphs);
+			undef($stats_now_json_shared);
+			undef($stats_now_json_unpaused);
+			undef($stats_history);
+		},
+		# Initialize per-connection state and handlers.
+		on_connect => sub {
+			my ($serv, $conn) = @_;
+			error_stderr("WebSocket connection $conn->{'port'} opened");
+			$serv->{'clients_connected'}++;
+			alarm(0);
+			# Set post-connect handshake timeout (enforced in on_tick)
+			$conn->{'connect_deadline'} = time() + 30;
+			# Set maximum send size
+			$conn->max_send_size(9216 * 1024); # Max ~9 MiB for 24h of data
+			# Handle connection events
+			$conn->on(
+				# Authenticate/control client updates from JSON messages.
+				utf8 => sub {
+					# Decode JSON message
+					my ($conn, $msg) = @_;
+					utf8::encode($msg) if (utf8::is_utf8($msg));
+					my $data = $json->decode($msg);
+					# Connection permission test unless already verified
+					if (!$conn->{'verified'}) {
+						my $user = verify_session_id($data->{'session'});
+						if ($user && webmin_user_is_admin()) {
+							# Set connection as verified and continue
+							error_stderr("WebSocket connection for user $user is granted");
+							$conn->{'verified'} = 1;
+							$conn->{'connect_deadline'} = undef;
+						} else {
+							# Deny connection and disconnect
+							error_stderr("WebSocket connection for user $user was denied");
+							$conn->disconnect();
+							return;
+						}
+					}
+					# Update connection variables
+					$conn->{'pausing'} = $conn->{'paused'} // 0;
+					$conn->{'paused'} = $data->{'paused'} // 0;
+					# Update WebSocket server variables
+					$serv->{'interval'} = $data->{'interval'} // 1;
+					$serv->{'disable'} = $data->{'disable'} // 0;
+					$serv->{'shutdown'} = $data->{'shutdown'} // 0;
+				},
+				# Track disconnects and optionally stop on last client.
+				disconnect => sub {
+					my ($conn) = @_;
+					$serv->{'clients_connected'}--;
+					error_stderr("WebSocket connection $conn->{'port'} closed");
+					# If shutdown requested and no clients connected
+					# then exit the server
+					if ($serv->{'shutdown'} && $serv->{'clients_connected'} == 0) {
+						error_stderr("WebSocket server is shutting down on last client disconnect");
+						$serv->shutdown();
+					}
+				}
+			);
+		},
+		# Clean up websocket registration before exit.
+		on_shutdown => sub {
+			# Shutdown the server and clean up
+			my ($serv) = @_;
+			error_stderr("WebSocket server has gracefully shut down");
+			remove_miniserv_websocket($port, $current_theme);
+			cleanup_miniserv_websockets([$port], $current_theme);
+			exit(0);
+		},
+	)->start;
+	alarm(0);
+}
+error_stderr("WebSocket server failed");
+remove_miniserv_websocket($port, $current_theme);
+cleanup_miniserv_websockets([$port], $current_theme);
+
+1;
