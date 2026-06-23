@@ -2415,7 +2415,7 @@ sub lib_csf_control
         foreign_check("csf")     &&
         foreign_available("csf") &&
         has_command("csf")       &&
-        $current_theme =~ /authentic-theme/)
+        $current_theme =~ /(authentic-theme|ael-webmin-theme)/)
     {
         do("$root_directory/$current_theme/extensions/csf/csf-lib.pl");
         if ($action eq 'load') {
