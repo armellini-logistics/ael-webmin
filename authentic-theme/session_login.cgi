@@ -6,7 +6,7 @@ use strict;
 no strict 'refs';
 
 our (%in, %gconfig, %tconfig, %text, %theme_text);
-our ($miniserv, $webprefix, $bg, $textbox_attrs, $hostname);
+our ($miniserv, $webprefix, $bg, $textbox_attrs, $hostname, $config_directory);
 
 require("$ENV{'THEME_ROOT'}/authentic-lib.pl");
 require("$ENV{'THEME_ROOT'}/login-lib.pl");
