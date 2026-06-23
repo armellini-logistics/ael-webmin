@@ -6,26 +6,56 @@ use strict;
 use warnings;
 require '../web-lib.pl';
 require './aihelp-lib.pl';
-our (%text, %config, $module_name);
+our (%text, %config, %in, $module_name);
 
 &init_config();
+&ReadParse();
 my %cfg = &get_config();
 
 # Print HTML Header
 &ui_print_header(undef, $text{'index_title'}, "");
 
-if (!$cfg{'gemini_api_key'}) {
-    # Render API Key configuration form
+if (!$cfg{'gemini_api_key'} || $in{'mode'} eq 'settings') {
+    # Render API Key and Google OAuth configuration form
     print &ui_form_start("save_config.cgi", "post");
-    print &ui_table_start($text{'index_apikey'}, undef, 2);
+    
+    # 1. Gemini Settings
+    print &ui_table_start("Gemini AI API Settings", undef, 2);
     
     print &ui_table_row($text{'index_apikey'},
-                        &ui_textbox("gemini_api_key", undef, 60, 0, 100, "placeholder=\"AIzaSy...\""));
+                        &ui_textbox("gemini_api_key", $cfg{'gemini_api_key'}, 60, 0, 100, "placeholder=\"AIzaSy...\""));
     
     print &ui_table_row("", $text{'index_apikey_desc'});
     
     print &ui_table_end();
-    print &ui_form_end([ [ "save", $text{'index_save'} ] ]);
+    
+    # 2. Google OAuth Settings
+    print &ui_table_start("Google OAuth2 Authentication Settings", undef, 2);
+    
+    print &ui_table_row("Enable Google Login",
+                        &ui_yesno_radio("google_auth_enabled", $cfg{'google_auth_enabled'} || 0, 1, 0));
+    
+    print &ui_table_row("Google Client ID",
+                        &ui_textbox("google_client_id", $cfg{'google_client_id'}, 60, 0, 200, "placeholder=\"...apps.googleusercontent.com\""));
+    
+    print &ui_table_row("Google Client Secret",
+                        &ui_password("google_client_secret", $cfg{'google_client_secret'}, 60, 0, 200));
+                        
+    print &ui_table_row("Allowed Email Domains",
+                        &ui_textbox("google_allowed_domains", $cfg{'google_allowed_domains'}, 60, 0, 200, "placeholder=\"armellini.com\""));
+                        
+    print &ui_table_row("Default Webmin User mapping",
+                        &ui_textbox("google_default_user", $cfg{'google_default_user'} || "admin", 20, 0, 50));
+    
+    print &ui_table_row("", "Configure your Google Cloud Project (e.g. <code>teamsmschat</code>) credentials. Make sure to add <code>https://&lt;your-server&gt;:10000/unauthenticated/google_oauth.cgi</code> to your authorized redirect URIs in the Google Developer Console.");
+    
+    print &ui_table_end();
+    
+    my @buttons = ( [ "save", $text{'index_save'} ] );
+    if ($cfg{'gemini_api_key'}) {
+        push(@buttons, [ "cancel", "Back to Chat", undef, undef, "onClick=\"window.location='index.cgi'; return false;\"" ]);
+    }
+    print &ui_form_end(\@buttons);
 }
 else {
     # Render Chatbot Interface
@@ -42,7 +72,7 @@ else {
         backdrop-filter: blur(12px);
         display: flex;
         flex-direction: column;
-        height: 600px;
+        height: 620px;
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         overflow: hidden;
     }
@@ -92,30 +122,62 @@ else {
         flex-direction: column;
         gap: 16px;
     }
+    
+    /* Avatars and Message Rows */
+    .chat-message-row {
+        display: flex;
+        gap: 12px;
+        max-width: 80%;
+        align-items: flex-start;
+        animation: bubble-fade 0.3s ease;
+    }
+    .chat-message-row.user {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+    }
+    .chat-message-row.bot {
+        align-self: flex-start;
+    }
+    .chat-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+    }
+    .chat-avatar.user {
+        background: #312e81;
+        color: white;
+    }
+    .chat-avatar.bot {
+        background: #7c3aed;
+        color: white;
+    }
+    
     .chat-bubble {
-        max-width: 75%;
+        max-width: 100%;
         padding: 12px 16px;
         border-radius: 12px;
         font-size: 14px;
         line-height: 1.5;
-        animation: bubble-fade 0.3s ease;
     }
     \@keyframes bubble-fade {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
     .chat-bubble.bot {
-        align-self: flex-start;
         background: white;
         border: 1px solid #e2e8f0;
         color: #1e293b;
-        border-bottom-left-radius: 4px;
+        border-top-left-radius: 4px;
     }
     .chat-bubble.user {
-        align-self: flex-end;
-        background: #4f46e5;
+        background: #1e293b;
         color: white;
-        border-bottom-right-radius: 4px;
+        border-top-right-radius: 4px;
     }
     .chat-bubble p {
         margin: 0 0 10px 0;
@@ -154,28 +216,47 @@ else {
         gap: 12px;
         align-items: center;
     }
-    .ai-chatbot-input {
+    
+    /* Pill shape input and attachments */
+    .ai-chatbot-input-wrapper {
         flex: 1;
+        display: flex;
+        align-items: center;
         border: 1px solid #cbd5e1;
-        border-radius: 12px;
-        padding: 12px 16px;
-        font-size: 14px;
-        outline: none;
+        border-radius: 24px;
+        padding: 4px 16px;
+        background: white;
         transition: border-color 0.2s ease;
     }
-    .ai-chatbot-input:focus {
+    .ai-chatbot-input-wrapper:focus-within {
         border-color: #4f46e5;
     }
+    .ai-chatbot-input-wrapper i.input-icon {
+        color: #94a3b8;
+        font-size: 16px;
+        margin-right: 8px;
+    }
+    .ai-chatbot-input {
+        flex: 1;
+        border: none;
+        padding: 8px 0;
+        font-size: 14px;
+        outline: none;
+        background: transparent;
+    }
     .ai-chatbot-send-btn {
+        width: 40px;
+        height: 40px;
         background: #4f46e5;
         color: white;
         border: none;
-        border-radius: 12px;
-        padding: 12px 20px;
-        font-size: 14px;
-        font-weight: 500;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         cursor: pointer;
         transition: background 0.2s ease;
+        flex-shrink: 0;
     }
     .ai-chatbot-send-btn:hover {
         background: #3730a3;
@@ -205,22 +286,28 @@ else {
 
 <div class="ai-chatbot-container">
     <div class="ai-chatbot-header">
-        <h3><i class="fa fa-android"></i> Webmin AI Assistant</h3>
+        <h3><i class="fa fa-android"></i> AEL-WebMin AI Assistant</h3>
         <div class="actions">
             <a href="#" id="clear-chat-btn"><i class="fa fa-trash"></i> $text{'index_clear'}</a>
-            <a href="save_config.cgi?clear_key=1"><i class="fa fa-cog"></i> $text{'index_settings'}</a>
+            <a href="index.cgi?mode=settings"><i class="fa fa-cog"></i> $text{'index_settings'}</a>
         </div>
     </div>
     
     <div class="ai-chatbot-messages" id="chat-messages">
-        <div class="chat-bubble bot">
-            <p>$text{'index_bot_welcome'}</p>
+        <div class="chat-message-row bot">
+            <div class="chat-avatar bot"><i class="fa fa-android"></i></div>
+            <div class="chat-bubble bot">
+                <p>$text{'index_bot_welcome'}</p>
+            </div>
         </div>
     </div>
     
     <div class="ai-chatbot-input-area">
-        <input type="text" class="ai-chatbot-input" id="chat-input" placeholder="$text{'index_prompt_placeholder'}" autocomplete="off">
-        <button class="ai-chatbot-send-btn" id="send-btn">$text{'index_send'} <i class="fa fa-paper-plane"></i></button>
+        <div class="ai-chatbot-input-wrapper">
+            <i class="fa fa-paperclip input-icon"></i>
+            <input type="text" class="ai-chatbot-input" id="chat-input" placeholder="$text{'index_prompt_placeholder'}" autocomplete="off">
+        </div>
+        <button class="ai-chatbot-send-btn" id="send-btn"><i class="fa fa-arrow-right"></i></button>
     </div>
 </div>
 
@@ -240,8 +327,11 @@ document.addEventListener("DOMContentLoaded", function() {
     clearBtn.addEventListener("click", function(e) {
         e.preventDefault();
         chatMessages.innerHTML = `
-            <div class="chat-bubble bot">
-                <p>$text{'index_bot_welcome'}</p>
+            <div class="chat-message-row bot">
+                <div class="chat-avatar bot"><i class="fa fa-android"></i></div>
+                <div class="chat-bubble bot">
+                    <p>$text{'index_bot_welcome'}</p>
+                </div>
             </div>
         `;
         scrollToBottom();
@@ -274,6 +364,17 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     
     function appendMessage(sender, text) {
+        const row = document.createElement("div");
+        row.className = "chat-message-row " + sender;
+        
+        const avatar = document.createElement("div");
+        avatar.className = "chat-avatar " + sender;
+        if (sender === "bot") {
+            avatar.innerHTML = '<i class="fa fa-android"></i>';
+        } else {
+            avatar.innerHTML = '<i class="fa fa-user"></i>';
+        }
+        
         const bubble = document.createElement("div");
         bubble.className = "chat-bubble " + sender;
         if (sender === "bot") {
@@ -281,14 +382,24 @@ document.addEventListener("DOMContentLoaded", function() {
         } else {
             bubble.textContent = text;
         }
-        chatMessages.appendChild(bubble);
+        
+        row.appendChild(avatar);
+        row.appendChild(bubble);
+        chatMessages.appendChild(row);
         scrollToBottom();
     }
     
     function showTypingIndicator() {
+        const row = document.createElement("div");
+        row.className = "chat-message-row bot";
+        row.id = "typing-indicator-row";
+        
+        const avatar = document.createElement("div");
+        avatar.className = "chat-avatar bot";
+        avatar.innerHTML = '<i class="fa fa-android"></i>';
+        
         const bubble = document.createElement("div");
         bubble.className = "chat-bubble bot";
-        bubble.id = "typing-indicator-bubble";
         bubble.innerHTML = `
             <div class="typing-indicator">
                 <div class="typing-dot"></div>
@@ -296,12 +407,15 @@ document.addEventListener("DOMContentLoaded", function() {
                 <div class="typing-dot"></div>
             </div>
         `;
-        chatMessages.appendChild(bubble);
+        
+        row.appendChild(avatar);
+        row.appendChild(bubble);
+        chatMessages.appendChild(row);
         scrollToBottom();
     }
     
     function removeTypingIndicator() {
-        const indicator = document.getElementById("typing-indicator-bubble");
+        const indicator = document.getElementById("typing-indicator-row");
         if (indicator) {
             indicator.remove();
         }

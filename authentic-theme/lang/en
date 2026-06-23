@@ -204,7 +204,7 @@ theme_fileformat_json=JSON
 theme_fileformat_js=JavaScript
 theme_fileformat_plain_text=Plain Text
 
-theme_xhred_titles_wm=Webmin
+theme_xhred_titles_wm=AEL-WebMin
 theme_xhred_titles_um=Usermin
 theme_xhred_titles_dashboard=Dashboard
 theme_xhred_titles_mail=Mail
